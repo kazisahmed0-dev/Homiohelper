@@ -1,0 +1,6 @@
+{
+  "name": "HomioHelper",
+  "description": "Professional homoeopathic clinic and pharmacy management web application designed for doctors and clinics in Bangladesh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

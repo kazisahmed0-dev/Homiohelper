@@ -1,0 +1,124 @@
+{
+  "projectId": "homiohelper-chamber",
+  "version": "1.0.0",
+  "description": "Firestore NoSQL schema and collection architecture for HomioHelper homeopathic prescription and chamber management software.",
+  "collections": [
+    {
+      "name": "doctor_profiles",
+      "path": "doctor_profiles/{profileId}",
+      "description": "Registered homeopathic practitioner profiles, chamber addresses, BMDC/Homoeopathy Board reg numbers, and consultation schedules.",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "userId": { "type": "string", "required": false },
+        "ownerId": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "qualification": { "type": "string", "required": true },
+        "chamberName": { "type": "string", "required": true },
+        "chamberAddress": { "type": "string", "required": true },
+        "regNumber": { "type": "string", "required": false },
+        "phone": { "type": "string", "required": false },
+        "email": { "type": "string", "required": false },
+        "additionalInfo": { "type": "string", "required": false },
+        "updatedAt": { "type": "timestamp/iso_string", "required": true },
+        "syncedAt": { "type": "timestamp/iso_string", "required": false }
+      },
+      "indexes": []
+    },
+    {
+      "name": "patients",
+      "path": "patients/{patientId}",
+      "description": "Chamber patient records, demographic info, blood group, chief complaints, and visit dates.",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "regNo": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "age": { "type": "number", "required": false },
+        "gender": { "type": "string", "enum": ["male", "female", "other"], "required": false },
+        "mobile": { "type": "string", "required": false },
+        "district": { "type": "string", "required": false },
+        "address": { "type": "string", "required": false },
+        "bloodGroup": { "type": "string", "required": false },
+        "chiefComplaint": { "type": "string", "required": false },
+        "registeredAt": { "type": "timestamp/iso_string", "required": true },
+        "lastVisitAt": { "type": "timestamp/iso_string", "required": false },
+        "totalVisits": { "type": "number", "required": false },
+        "ownerId": { "type": "string", "required": false }
+      },
+      "indexes": [
+        {
+          "fields": [
+            { "field": "name", "order": "ASCENDING" },
+            { "field": "registeredAt", "order": "DESCENDING" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "prescriptions",
+      "path": "prescriptions/{prescriptionId}",
+      "description": "Standard A4 formatted homeopathic prescriptions, vital signs, potencies, dosages, and follow-ups.",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "prescriptionNo": { "type": "string", "required": true },
+        "patientId": { "type": "string", "required": true },
+        "patientName": { "type": "string", "required": true },
+        "patientAge": { "type": "string/number", "required": false },
+        "patientGender": { "type": "string", "required": false },
+        "patientMobile": { "type": "string", "required": false },
+        "patientRegNo": { "type": "string", "required": false },
+        "date": { "type": "string", "required": true },
+        "chiefComplaint": { "type": "string", "required": false },
+        "diagnosis": { "type": "string", "required": false },
+        "bp": { "type": "string", "required": false },
+        "weight": { "type": "string", "required": false },
+        "temperature": { "type": "string", "required": false },
+        "warning": { "type": "string", "required": false },
+        "remedies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "medicineName": { "type": "string" },
+              "potency": { "type": "string" },
+              "form": { "type": "string" },
+              "dosage": { "type": "string" },
+              "frequency": { "type": "string" },
+              "duration": { "type": "string" },
+              "instructions": { "type": "string" }
+            }
+          }
+        },
+        "dietRestrictions": { "type": "string", "required": false },
+        "specialInstructions": { "type": "string", "required": false },
+        "followUpDate": { "type": "string", "required": false },
+        "createdAt": { "type": "timestamp/iso_string", "required": true },
+        "ownerId": { "type": "string", "required": false }
+      },
+      "indexes": [
+        {
+          "fields": [
+            { "field": "patientId", "order": "ASCENDING" },
+            { "field": "createdAt", "order": "DESCENDING" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "custom_medicines",
+      "path": "custom_medicines/{medicineId}",
+      "description": "Custom chamber medicines, repertory additions, potencies, and inventory tracking.",
+      "fields": {
+        "id": { "type": "string", "required": true },
+        "name": { "type": "string", "required": true },
+        "nameBn": { "type": "string", "required": false },
+        "category": { "type": "string", "required": true },
+        "availablePotencies": { "type": "array", "items": { "type": "string" } },
+        "stockQuantity": { "type": "number", "required": true },
+        "unit": { "type": "string", "required": true },
+        "reorderLevel": { "type": "number", "required": true },
+        "updatedAt": { "type": "timestamp/iso_string", "required": true }
+      }
+    }
+  ]
+}

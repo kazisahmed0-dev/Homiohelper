@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomioHelper - A4 Prescription Document</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* CSS Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      font-family: 'Noto Sans Bengali', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #11231D;
+      background: #374151;
+      -webkit-font-smoothing: antialiased;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Top Control Toolbar (Hidden in Print) */
+    .no-print {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #164E43;
+      color: #FFFFFF;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .toolbar-subtitle {
+      font-size: 11px;
+      color: #A3C9BE;
+      margin-top: 2px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #10B981;
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: #059669;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #FFFFFF;
+      border: 1px solid #4B7C71;
+    }
+    .btn-secondary:hover {
+      background: #113E35;
+    }
+
+    /* Screen Preview Container */
+    .screen-wrapper {
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Strict A4 Portrait Paper */
+    .rx-page {
+      width: 210mm;
+      min-height: 297mm;
+      background: #FFFFFF;
+      padding: 12mm 15mm 12mm 15mm;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Strict A4 Print Styles */
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+
+    @media print {
+      html, body {
+        background: #FFFFFF !important;
+        color: #11231D !important;
+        font-size: 10.5pt !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .screen-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+      }
+
+      .rx-page {
+        width: 100% !important;
+        max-width: none !important;
+        min-height: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+
+    /* Doctor Header */
+    .rx-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 2.5px solid #164E43;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    .rx-doc-info {
+      flex: 1 1 45%;
+      text-align: left;
+    }
+
+    .rx-doc-name {
+      font-size: 16pt;
+      font-weight: 800;
+      color: #0F2D25;
+      line-height: 1.2;
+    }
+
+    .rx-doc-qual {
+      font-size: 9.5pt;
+      font-weight: 600;
+      color: #164E43;
+      margin-top: 3px;
+    }
+
+    .rx-doc-reg {
+      font-size: 8.5pt;
+      color: #516A60;
+      font-family: ui-monospace, monospace;
+      margin-top: 2px;
+    }
+
+    .rx-logo-container {
+      flex: 0 0 10%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .rx-logo-img {
+      max-height: 52px;
+      max-width: 75px;
+      object-fit: contain;
+    }
+
+    .rx-emblem-badge {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid #164E43;
+      background: #F1F6F3;
+      color: #164E43;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18pt;
+      font-weight: 800;
+      font-family: serif;
+    }
+
+    .rx-chamber-info {
+      flex: 1 1 45%;
+      text-align: right;
+      font-size: 8.5pt;
+      color: #40584F;
+      line-height: 1.35;
+    }
+
+    .rx-chamber-name {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #0F2D25;
+      margin-bottom: 2px;
+    }
+
+    .rx-chamber-phone {
+      font-weight: 600;
+      color: #164E43;
+      margin-top: 1px;
+    }
+
+    .rx-visiting-hours {
+      font-size: 8pt;
+      color: #5B7268;
+      font-style: italic;
+      margin-top: 2px;
+    }
+
+    /* Patient Details Strip */
+    .rx-patient-bar {
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #C5D6CD;
+      border-radius: 4px;
+      background: #F8FAF9;
+      padding: 6px 10px;
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1.2fr 1fr;
+      gap: 8px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .rx-patient-cell {
+      font-size: 9pt;
+    }
+
+    .rx-patient-lbl {
+      display: block;
+      font-size: 7.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: #5E756C;
+      margin-bottom: 1px;
+    }
+
+    .rx-patient-val {
+      font-weight: 700;
+      color: #0E221C;
+    }
+
+    /* Clinical Details & Vitals */
+    .rx-clinical-box {
+      margin-bottom: 10px;
+      padding: 7px 10px;
+      background: #FCFDFC;
+      border: 1px solid #D7E5DE;
+      border-radius: 4px;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .rx-vitals-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding-bottom: 5px;
+      margin-bottom: 5px;
+      border-bottom: 1px solid #E5EEE9;
+      color: #476257;
+      font-size: 8.5pt;
+    }
+
+    .rx-vital-item strong {
+      color: #122922;
+      font-weight: 700;
+    }
+
+    .rx-clinical-line {
+      margin-top: 3px;
+      color: #274037;
+      line-height: 1.35;
+    }
+
+    .rx-clinical-line strong {
+      color: #164E43;
+      font-weight: 700;
+    }
+
+    /* Remedies Table */
+    .rx-symbol-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+
+    .rx-symbol {
+      font-size: 20pt;
+      font-family: serif;
+      font-weight: 900;
+      font-style: italic;
+      color: #164E43;
+      line-height: 1;
+    }
+
+    .rx-section-title {
+      font-size: 8.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #122821;
+    }
+
+    .rx-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #B8CCC2;
+      margin-bottom: 10px;
+    }
+
+    .rx-table th {
+      background: #EFF5F2;
+      color: #17352B;
+      font-weight: 700;
+      font-size: 8.5pt;
+      padding: 5px 8px;
+      border-bottom: 1.5px solid #B8CCC2;
+      border-right: 1px solid #CBDCD3;
+      text-align: left;
+    }
+
+    .rx-table th:last-child {
+      border-right: none;
+    }
+
+    .rx-table td {
+      padding: 6px 8px;
+      font-size: 8.5pt;
+      border-bottom: 1px solid #E1ECE6;
+      border-right: 1px solid #E1ECE6;
+      vertical-align: top;
+    }
+
+    .rx-table td:last-child {
+      border-right: none;
+    }
+
+    .rx-table tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .rx-med-name {
+      font-weight: 700;
+      font-size: 9.5pt;
+      color: #0F2A21;
+      display: block;
+    }
+
+    .rx-med-potency {
+      font-weight: 700;
+      color: #164E43;
+      background: #E8F2ED;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 8pt;
+      display: inline-block;
+      margin-top: 2px;
+    }
+
+    .rx-med-form {
+      font-size: 7.5pt;
+      color: #647B72;
+      margin-left: 4px;
+    }
+
+    .rx-med-instructions-block {
+      margin-top: 4px;
+      padding: 4px 6px;
+      background: #F4F8F6;
+      border-left: 2px solid #164E43;
+      border-radius: 2px;
+      font-size: 8pt;
+      color: #2F4B40;
+      line-height: 1.3;
+    }
+
+    .rx-med-instruction-item {
+      margin-bottom: 1px;
+    }
+    .rx-med-instruction-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .rx-inst-label {
+      font-weight: 700;
+      color: #164E43;
+      font-size: 7.5pt;
+    }
+
+    /* Food Restrictions & Advice */
+    .rx-advice-container {
+      margin-top: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #C9DBD1;
+      border-radius: 4px;
+      background: #F9FCFA;
+      padding: 8px 10px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .rx-advice-title {
+      font-size: 8.5pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #164E43;
+      margin-bottom: 5px;
+      padding-bottom: 3px;
+      border-bottom: 1px dashed #D2E2D9;
+    }
+
+    .rx-advice-row {
+      margin-bottom: 4px;
+      font-size: 8.5pt;
+      line-height: 1.35;
+      color: #254035;
+    }
+    .rx-advice-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .rx-advice-avoid strong {
+      color: #A31B1B;
+      font-weight: 700;
+    }
+    .rx-advice-permit strong {
+      color: #1A6B3A;
+      font-weight: 700;
+    }
+    .rx-advice-precaution strong {
+      color: #0E5E52;
+      font-weight: 700;
+    }
+    .rx-advice-general strong {
+      color: #1C3B30;
+      font-weight: 700;
+    }
+
+    /* Optional Investigations */
+    .rx-investigations-box {
+      margin-top: 6px;
+      margin-bottom: 8px;
+      border: 1px solid #CFDFD6;
+      border-radius: 4px;
+      background: #FAFDFB;
+      padding: 6px 10px;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .rx-investigations-box strong {
+      color: #164E43;
+      font-weight: 700;
+    }
+
+    /* Optional Warning */
+    .rx-warning-box {
+      margin-top: 6px;
+      margin-bottom: 8px;
+      border: 1px solid #F5C6CB;
+      background: #FFF5F5;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 8.5pt;
+      color: #721C24;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .rx-warning-box strong {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 8pt;
+    }
+
+    /* Follow Up Box */
+    .rx-followup-box {
+      margin-top: 6px;
+      margin-bottom: 8px;
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: #164E43;
+      background: #EBF4F0;
+      border: 1px solid #CDE0D6;
+      border-radius: 4px;
+      padding: 4px 8px;
+      display: inline-block;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    /* Signature & Footer Block */
+    .rx-footer {
+      margin-top: 18px;
+      padding-top: 10px;
+      border-top: 1px solid #CBDAD1;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .rx-footer-contact {
+      font-size: 8pt;
+      color: #557165;
+      line-height: 1.35;
+      max-width: 60%;
+    }
+
+    .rx-footer-signature-block {
+      text-align: center;
+      min-width: 170px;
+    }
+
+    .rx-signature-line {
+      border-bottom: 1.5px solid #203B31;
+      height: 38px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .rx-signature-name {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #112821;
+    }
+
+    .rx-signature-title {
+      font-size: 7.5pt;
+      color: #556D63;
+    }
+
+    .rx-bottom-standard {
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px solid #EBF1EE;
+      text-align: center;
+      font-size: 7pt;
+      color: #7A9188;
+    }
+  </style>
+</head>
+<body>
+  <!-- Clean Action Bar (Excluded from Print) -->
+  <div class="no-print">
+    <div>
+      <div class="toolbar-title">HomioHelper · ডেডিকেটেড প্রেসক্রিপশন প্রিন্ট প্রিভিউ</div>
+      <div class="toolbar-subtitle">A4 Portrait Standard · Google AI Studio / Gemini ইন্টারফেস মুক্ত প্রিন্ট ভিউ</div>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-secondary" onclick="window.close();">✕ বন্ধ করুন (Close)</button>
+      <button class="btn btn-primary" onclick="window.print();">🖨️ প্রিন্ট করুন / Save PDF</button>
+    </div>
+  </div>
+
+  <div class="screen-wrapper">
+    <div class="rx-page" id="rx-document-root">
+      <div style="text-align: center; padding: 40px; color: #666;">
+        প্রেসক্রিপশন লোড হচ্ছে...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      try {
+        var rxData = null;
+        var docData = null;
+        var isBn = true;
+
+        // 1. Load Prescription
+        var bufferedRx = localStorage.getItem('homiohelper_active_print_rx');
+        if (bufferedRx) {
+          rxData = JSON.parse(bufferedRx);
+        } else {
+          var params = new URLSearchParams(window.location.search);
+          var rxId = params.get('rxId');
+          var savedListRaw = localStorage.getItem('homiohelper_prescriptions_data');
+          if (savedListRaw) {
+            var list = JSON.parse(savedListRaw);
+            if (Array.isArray(list)) {
+              if (rxId) {
+                rxData = list.find(function(item) { return item.id === rxId; });
+              }
+              if (!rxData && list.length > 0) {
+                rxData = list[0];
+              }
+            }
+          }
+        }
+
+        // 2. Load Doctor Profile
+        var bufferedDoc = localStorage.getItem('homiohelper_active_print_doctor');
+        if (bufferedDoc) {
+          docData = JSON.parse(bufferedDoc);
+        } else {
+          var currentDocRaw = localStorage.getItem('homiohelper_current_doctor_profile');
+          if (currentDocRaw) {
+            docData = JSON.parse(currentDocRaw);
+          }
+        }
+
+        var langSetting = localStorage.getItem('homiohelper_active_print_lang') || localStorage.getItem('homiohelper_language');
+        if (langSetting === 'en') {
+          isBn = false;
+        }
+
+        if (!rxData) {
+          document.getElementById('rx-document-root').innerHTML = 
+            '<div style="text-align: center; padding: 50px;">' +
+            '<h2>প্রেসক্রিপশন পাওয়া যায়নি</h2>' +
+            '<p style="margin-top: 10px; font-size: 13px; color: #666;">অনুগ্রহ করে মূল অ্যাপ্লিকেশন থেকে যেকোনো প্রেসক্রিপশনে "প্রিন্ট করুন" চাপুন।</p>' +
+            '</div>';
+          return;
+        }
+
+        // Resolve Doctor Information (Precedence: Rx Doctor > Active Doctor)
+        var doctor = (rxData.doctorProfile && rxData.doctorProfile.name) ? rxData.doctorProfile : (docData || {});
+        var doctorName = doctor.name || (isBn ? 'ডা. এম. এ. রহমান' : 'Dr. M. A. Rahman');
+        var doctorQual = doctor.qualification || '';
+        var doctorReg = doctor.regNumber || '';
+        var chamberName = doctor.chamberName || (isBn ? 'হোমিওপ্যাথিক চেম্বার ও আরোগ্য নিকেতন' : 'Homoeopathic Clinic & Chamber');
+        var chamberAddr = doctor.chamberAddress || '';
+        var phone = doctor.phone || '';
+        var email = doctor.email || '';
+        var visitingHours = doctor.additionalInfo || '';
+        var logoUrl = doctor.logoUrl || '';
+
+        // Resolve Patient Details
+        var patientName = rxData.patientName || (isBn ? 'নাম উল্লেখ নেই' : 'Not Specified');
+        var patientRegNo = rxData.patientRegNo || rxData.prescriptionNo || '—';
+        var patientAge = rxData.patientAge ? (rxData.patientAge + (isBn ? ' বছর' : ' Y')) : '';
+        var patientGender = rxData.patientGender === 'male' ? (isBn ? 'পুরুষ' : 'Male') :
+                            rxData.patientGender === 'female' ? (isBn ? 'মহিলা' : 'Female') :
+                            rxData.patientGender === 'other' ? (isBn ? 'অন্যান্য' : 'Other') : '';
+        var patientAgeGender = [patientAge, patientGender].filter(Boolean).join(' / ') || '—';
+        var rxDate = rxData.date || new Date().toLocaleDateString(isBn ? 'bn-BD' : 'en-GB');
+        var patientContact = rxData.patientMobile || rxData.patientAddress || '—';
+
+        // Clinical Details & Vitals
+        var bp = (rxData.bp || '').trim();
+        var pulse = (rxData.pulse || '').trim();
+        var weight = (rxData.weight || '').trim();
+        var temp = (rxData.temperature || '').trim();
+        var hasVitals = Boolean(bp || pulse || weight || temp);
+
+        var chiefComplaint = (rxData.chiefComplaint || '').trim();
+        var patientHistory = (rxData.patientHistory || '').trim();
+        var diagnosis = (rxData.diagnosis || '').trim();
+        var clinicalNotes = (rxData.clinicalNotes || '').trim();
+        var procedures = (rxData.procedures || '').trim();
+        var hasClinicalDetails = Boolean(chiefComplaint || patientHistory || diagnosis || clinicalNotes || procedures);
+
+        // Remedies
+        var remedies = (rxData.remedies || []).filter(function (r) {
+          return (r.medicineName && r.medicineName.trim()) || (r.potency && r.potency.trim());
+        });
+
+        // Food Restrictions & Advice (ONLY if entered)
+        var foodsToAvoid = (rxData.foodsToAvoid || rxData.dietRestrictions || '').trim();
+        var foodsPermitted = (rxData.foodsPermitted || '').trim();
+        var generalPrecautions = (rxData.generalPrecautions || '').trim();
+        var additionalAdvice = (rxData.additionalAdvice || rxData.specialInstructions || '').trim();
+        var hasAdvice = Boolean(foodsToAvoid || foodsPermitted || generalPrecautions || additionalAdvice);
+
+        var investigations = (rxData.investigations || '').trim();
+        var warning = (rxData.warning || '').trim();
+        var followUpDate = (rxData.followUpDate || '').trim();
+
+        // Build HTML
+        var html = '';
+        html += '<div style="flex: 1 0 auto;">';
+
+        // 1. Doctor Header
+        html += '<header class="rx-header">';
+        html += '  <div class="rx-doc-info">';
+        html += '    <div class="rx-doc-name">' + doctorName + '</div>';
+        if (doctorQual) html += '    <div class="rx-doc-qual">' + doctorQual + '</div>';
+        if (doctorReg) html += '    <div class="rx-doc-reg">' + doctorReg + '</div>';
+        html += '  </div>';
+
+        html += '  <div class="rx-logo-container">';
+        if (logoUrl) {
+          html += '    <img src="' + logoUrl + '" alt="Clinic Logo" class="rx-logo-img">';
+        } else {
+          html += '    <div class="rx-emblem-badge" title="Homoeopathic Practice Emblem">⚕</div>';
+        }
+        html += '  </div>';
+
+        html += '  <div class="rx-chamber-info">';
+        html += '    <div class="rx-chamber-name">' + chamberName + '</div>';
+        if (chamberAddr) html += '    <div>' + chamberAddr + '</div>';
+        if (phone) html += '    <div class="rx-chamber-phone">' + (isBn ? 'মোবাইল: ' : 'Phone: ') + phone + '</div>';
+        if (email) html += '    <div>' + email + '</div>';
+        if (visitingHours) html += '    <div class="rx-visiting-hours">' + visitingHours + '</div>';
+        html += '  </div>';
+        html += '</header>';
+
+        // 2. Patient Details Strip
+        html += '<div class="rx-patient-bar">';
+        html += '  <div class="rx-patient-cell">';
+        html += '    <span class="rx-patient-lbl">' + (isBn ? 'রোগীর নাম' : 'Patient Name') + '</span>';
+        html += '    <span class="rx-patient-val">' + patientName + '</span>';
+        html += '  </div>';
+        html += '  <div class="rx-patient-cell">';
+        html += '    <span class="rx-patient-lbl">' + (isBn ? 'রেজি নং' : 'Reg No') + '</span>';
+        html += '    <span class="rx-patient-val">' + patientRegNo + '</span>';
+        html += '  </div>';
+        html += '  <div class="rx-patient-cell">';
+        html += '    <span class="rx-patient-lbl">' + (isBn ? 'বয়স ও লিঙ্গ' : 'Age & Gender') + '</span>';
+        html += '    <span class="rx-patient-val">' + patientAgeGender + '</span>';
+        html += '  </div>';
+        html += '  <div class="rx-patient-cell">';
+        html += '    <span class="rx-patient-lbl">' + (isBn ? 'তারিখ' : 'Date') + '</span>';
+        html += '    <span class="rx-patient-val">' + rxDate + '</span>';
+        html += '  </div>';
+        html += '</div>';
+
+        // 3. Clinical Findings (ONLY if entered)
+        if (hasVitals || hasClinicalDetails) {
+          html += '<div class="rx-clinical-box">';
+          if (hasVitals) {
+            html += '<div class="rx-vitals-strip">';
+            if (bp) html += '<span class="rx-vital-item"><strong>' + (isBn ? 'রক্তচাপ (BP):' : 'BP:') + '</strong> ' + bp + '</span>';
+            if (pulse) html += '<span class="rx-vital-item"><strong>' + (isBn ? 'পালস (Pulse):' : 'Pulse:') + '</strong> ' + pulse + '</span>';
+            if (weight) html += '<span class="rx-vital-item"><strong>' + (isBn ? 'ওজন (Weight):' : 'Weight:') + '</strong> ' + weight + '</span>';
+            if (temp) html += '<span class="rx-vital-item"><strong>' + (isBn ? 'তাপমাত্রা (Temp):' : 'Temp:') + '</strong> ' + temp + '</span>';
+            html += '</div>';
+          }
+          if (chiefComplaint) html += '<div class="rx-clinical-line"><strong>' + (isBn ? 'প্রধান উপসর্গ:' : 'Chief Complaints:') + '</strong> ' + chiefComplaint + '</div>';
+          if (patientHistory) html += '<div class="rx-clinical-line"><strong>' + (isBn ? 'অতীত ইতিহাস:' : 'Patient History:') + '</strong> ' + patientHistory + '</div>';
+          if (diagnosis) html += '<div class="rx-clinical-line"><strong>' + (isBn ? 'রোগ নির্ণয়:' : 'Diagnosis:') + '</strong> ' + diagnosis + '</div>';
+          if (clinicalNotes) html += '<div class="rx-clinical-line"><strong>' + (isBn ? 'ক্লিনিক্যাল ফাইন্ডিংস:' : 'Clinical Findings:') + '</strong> ' + clinicalNotes + '</div>';
+          if (procedures) html += '<div class="rx-clinical-line"><strong>' + (isBn ? 'পদ্ধতি ও মডালিটিজ:' : 'Procedures:') + '</strong> ' + procedures + '</div>';
+          html += '</div>';
+        }
+
+        // 4. Prescribed Remedies Table
+        html += '<div class="rx-symbol-header">';
+        html += '  <span class="rx-symbol">℞</span>';
+        html += '  <span class="rx-section-title">' + (isBn ? 'ব্যবস্থাপত্র / প্রেসক্রাইবড হোমিওপ্যাথিক ঔষধ' : 'Prescribed Homoeopathic Remedies') + '</span>';
+        html += '</div>';
+
+        html += '<table class="rx-table">';
+        html += '  <thead>';
+        html += '    <tr>';
+        html += '      <th style="width: 5%; text-align: center;">#</th>';
+        html += '      <th style="width: 45%;">' + (isBn ? 'ঔষধের নাম ও শক্তি' : 'Medicine & Potency') + '</th>';
+        html += '      <th style="width: 16%;">' + (isBn ? 'মাত্রা' : 'Dosage') + '</th>';
+        html += '      <th style="width: 20%;">' + (isBn ? 'সেবনবিধি' : 'Frequency') + '</th>';
+        html += '      <th style="width: 14%;">' + (isBn ? 'সময়কাল' : 'Duration') + '</th>';
+        html += '    </tr>';
+        html += '  </thead>';
+        html += '  <tbody>';
+
+        if (remedies.length > 0) {
+          remedies.forEach(function (remedy, idx) {
+            var whenToTake = (remedy.whenToTake || '').trim();
+            var howToTake = (remedy.howToTake || '').trim();
+            var beforeAfterFood = (remedy.beforeAfterFood || '').trim();
+            var addInstructions = (remedy.additionalInstructions || '').trim();
+            var note = (remedy.instructions || '').trim();
+            var hasInst = Boolean(whenToTake || howToTake || beforeAfterFood || addInstructions || note);
+
+            html += '<tr>';
+            html += '  <td style="text-align: center; color: #5B756C; font-weight: 600;">' + (idx + 1) + '</td>';
+            html += '  <td>';
+            html += '    <span class="rx-med-name">' + (remedy.medicineName || '—') + '</span>';
+            if (remedy.potency) html += '    <span class="rx-med-potency">' + remedy.potency + '</span>';
+            if (remedy.form) html += '    <span class="rx-med-form">(' + remedy.form + ')</span>';
+
+            if (hasInst) {
+              html += '    <div class="rx-med-instructions-block">';
+              if (whenToTake) html += '<div class="rx-med-instruction-item"><span class="rx-inst-label">' + (isBn ? 'কখন সেব্য: ' : 'When: ') + '</span>' + whenToTake + '</div>';
+              if (howToTake) html += '<div class="rx-med-instruction-item"><span class="rx-inst-label">' + (isBn ? 'কীভাবে সেব্য: ' : 'How: ') + '</span>' + howToTake + '</div>';
+              if (beforeAfterFood) html += '<div class="rx-med-instruction-item"><span class="rx-inst-label">' + (isBn ? 'খাবারের সময়: ' : 'Food timing: ') + '</span>' + beforeAfterFood + '</div>';
+              if (addInstructions) html += '<div class="rx-med-instruction-item"><span class="rx-inst-label">' + (isBn ? 'নির্দেশনা: ' : 'Directions: ') + '</span>' + addInstructions + '</div>';
+              if (!addInstructions && note) html += '<div class="rx-med-instruction-item"><span class="rx-inst-label">' + (isBn ? 'পরামর্শ: ' : 'Note: ') + '</span>' + note + '</div>';
+              html += '    </div>';
+            }
+            html += '  </td>';
+            html += '  <td style="font-weight: 600; color: #1E372F;">' + (remedy.dosage || '—') + '</td>';
+            html += '  <td style="color: #233D35;">' + (remedy.frequency || '—') + '</td>';
+            html += '  <td style="font-weight: 600; color: #1E372F;">' + (remedy.duration || '—') + '</td>';
+            html += '</tr>';
+          });
+        } else {
+          html += '<tr><td colspan="5" style="text-align: center; padding: 16px; color: #7B8F86; font-style: italic;">' + (isBn ? 'কোনো ওষুধ যুক্ত করা হয়নি' : 'No remedies entered.') + '</td></tr>';
+        }
+
+        html += '  </tbody>';
+        html += '</table>';
+
+        // 5. Investigations (ONLY if entered)
+        if (investigations) {
+          html += '<div class="rx-investigations-box"><strong>' + (isBn ? 'প্রয়োজনীয় পরীক্ষা-নিরীক্ষা:' : 'Investigations & Tests:') + '</strong> <span>' + investigations + '</span></div>';
+        }
+
+        // 6. Food Restrictions & Advice (ONLY if entered)
+        if (hasAdvice) {
+          html += '<div class="rx-advice-container">';
+          html += '  <div class="rx-advice-title">' + (isBn ? 'উপদেশ ও পথ্য নির্দেশিকা' : 'Advice & Health Regimen') + '</div>';
+          if (foodsToAvoid) html += '  <div class="rx-advice-row rx-advice-avoid"><strong>' + (isBn ? 'বর্জনীয় খাদ্য ও পথ্য: ' : 'Foods to Avoid: ') + '</strong>' + foodsToAvoid + '</div>';
+          if (foodsPermitted) html += '  <div class="rx-advice-row rx-advice-permit"><strong>' + (isBn ? 'অনুমোদিত ও উপকারী খাদ্য: ' : 'Foods Permitted: ') + '</strong>' + foodsPermitted + '</div>';
+          if (generalPrecautions) html += '  <div class="rx-advice-row rx-advice-precaution"><strong>' + (isBn ? 'সাধারণ সতর্কতা ও যত্ন: ' : 'General Precautions: ') + '</strong>' + generalPrecautions + '</div>';
+          if (additionalAdvice) html += '  <div class="rx-advice-row rx-advice-general"><strong>' + (isBn ? 'অতিরিক্ত পরামর্শ: ' : 'Additional Advice: ') + '</strong>' + additionalAdvice + '</div>';
+          html += '</div>';
+        }
+
+        // 7. Warning (ONLY if entered)
+        if (warning) {
+          html += '<div class="rx-warning-box"><strong>' + (isBn ? 'সতর্কতা ও নিষেধাজ্ঞা: ' : 'Warning: ') + '</strong>' + warning + '</div>';
+        }
+
+        // 8. Follow-up date (ONLY if entered)
+        if (followUpDate) {
+          html += '<div class="rx-followup-box">' + (isBn ? 'পরবর্তী সাক্ষাতের সম্ভাব্য তারিখ: ' : 'Follow-up Date: ') + followUpDate + '</div>';
+        }
+
+        html += '</div>'; // End main content
+
+        // 9. Doctor Signature Area & Footer
+        html += '<footer class="rx-footer">';
+        html += '  <div class="rx-footer-contact">';
+        if (phone) html += '    <div><strong>' + (isBn ? 'জরুরি যোগাযোগ: ' : 'Emergency: ') + '</strong>' + phone + '</div>';
+        if (chamberAddr) html += '    <div>' + chamberAddr + '</div>';
+        html += '    <div style="margin-top: 4px; font-size: 7.5pt; color: #7B8F87;">' + (isBn ? 'ঔষধ শিশুদের নাগালের বাইরে রাখুন। নির্দেশিত মাত্রা ছাড়া সেবন করবেন না।' : 'Keep medicines out of reach of children.') + '</div>';
+        html += '  </div>';
+
+        html += '  <div class="rx-footer-signature-block">';
+        html += '    <div class="rx-signature-line"><span style="font-family: serif; font-style: italic; font-size: 8.5pt; color: #536C61;">' + doctorName + '</span></div>';
+        html += '    <div class="rx-signature-name">' + (isBn ? 'চিকিৎসকের স্বাক্ষর' : 'Doctor Signature') + '</div>';
+        html += '    <div class="rx-signature-title">' + (doctorQual || doctorName) + '</div>';
+        html += '  </div>';
+        html += '</footer>';
+
+        html += '<div class="rx-bottom-standard">HomioHelper Clinic Management System · Official Homoeopathic Practice Standard (Bangladesh)</div>';
+
+        document.getElementById('rx-document-root').innerHTML = html;
+
+        // Auto print if requested
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('auto') === '1') {
+          setTimeout(function() {
+            window.focus();
+            window.print();
+          }, 400);
+        }
+      } catch (err) {
+        console.error('Error rendering print page:', err);
+      }
+    })();
+  </script>
+</body>
+</html>
